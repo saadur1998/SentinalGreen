@@ -1,0 +1,24 @@
+# === Core AI Agent Framework ===
+autogen==0.8.6
+
+# === LLM Integration ===
+requests
+python-dotenv
+
+# === Local LLM Service ===
+fastapi
+uvicorn
+
+# === Chainlit UI ===
+chainlit 
+
+# === Azure Cloud Integration (Fixed)
+azure-iot-device==2.14.0  # ? Latest stable supported version
+azure-identity
+azure-core
+
+# === Data Handling ===
+pandas
+
+# === Logging & Optional Tools ===
+loguru
