@@ -1,6 +1,6 @@
-"access_time,user_role,location,method,failed_attempts,alerts"
-"02:15,Technician,Server Room,Keycard,0,None"
-"23:45,Guest,Lobby,QR,2,Suspicious badge ID"
-"13:10,Admin,Control Room,Biometrics,0,None"
-"03:30,Unknown,Server Room,Unknown,4,Repeated failures"
-"09:00,Staff,Main Gate,Keycard,1,None"
+access_time,user_role,location,method,failed_attempts,alerts
+2:15,Technician,Server Room,Keycard,0,None
+23:45,Guest,Lobby,QR,2,Suspicious badge ID
+13:10,Admin,Control Room,Biometrics,0,None
+3:30,Unknown,Server Room,Unknown,4,Repeated failures
+9:00,Staff,Main Gate,Keycard,1,None
