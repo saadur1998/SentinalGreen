@@ -1,6 +1,6 @@
-"compute_load,storage_utilization,bandwidth,cost,status"
-"85,70,600,0.10,Stable"
-"95,90,750,0.25,Overloaded"
-"50,40,200,0.05,Underutilized"
-"80,75,500,0.15,Balanced"
-"65,50,300,0.12,Stable"
+compute_load,storage_utilization,bandwidth,cost,status
+85,70,600,0.1,Stable
+95,90,750,0.25,Overloaded
+50,40,200,0.05,Underutilized
+80,75,500,0.15,Balanced
+65,50,300,0.12,Stable
