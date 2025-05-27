@@ -1,6 +1,6 @@
-"temperature,humidity,rack_load"
-"26,45,70"
-"29,50,80"
-"24,40,60"
-"30,55,90"
-"22,35,50"
+temperature,humidity,rack_load
+26,45,70
+29,50,80
+24,40,60
+30,55,90
+22,35,50

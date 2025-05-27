@@ -1,6 +1,6 @@
-"energy_kwh,carbon_emission,renewable_percent,policy_target,anomaly"
-"120000,35,60,50,None"
-"180000,50,40,60,Overuse spike"
-"95000,25,70,50,None"
-"200000,80,30,60,Yes - Emissions breach"
-"100000,30,65,60,None"
+energy_kwh,carbon_emission,renewable_percent,policy_target,anomaly
+120000,35,60,50,None
+180000,50,40,60,Overuse spike
+95000,25,70,50,None
+200000,80,30,60,Yes - Emissions breach
+100000,30,65,60,None
