@@ -1,26 +1,104 @@
 # agents/predictive_maintainer_agent.py
+import os
+import pandas as pd
+import asyncio
 
-from autogen import ConversableAgent
-from utils.llm_client import get_llm_response
+from typing import Annotated
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
 
-class PredictiveMaintainerAgent(ConversableAgent):
-    def __init__(self, name="PredictiveMaintainer", system_message=None):
-        if system_message is None:
-            system_message = (
-                "You are a Predictive Maintainer AI Agent for a data center. "
-                "You analyze sensor data and hardware records to anticipate failures. "
-                "Based on inputs, recommend 'No Action', 'Schedule Maintenance', or 'Urgent Inspection'."
+from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.functions import kernel_function
+
+class PredictiveMaintainerPlugin:
+    """Plugin for predictive maintenance analysis."""
+
+    def __init__(self):
+        self.data = pd.read_csv("mock_data/maintenance_data.csv")
+
+    @kernel_function(description="Get the next maintenance reading from mock data.")
+    def get_next_reading(self) -> Annotated[dict, "Returns the next maintenance reading with timestamp."]:
+        return self.data.iloc[0].to_dict()
+    
+    @kernel_function(description="Analyzes maintenance data and provides recommendations.")
+    def analyze_maintenance(self,
+                            component: str,
+                            uptime_hours: float,
+                            spikes: int,
+                            last_maintenance: int,
+                            failure_history: str) -> Annotated[str, "Returns maintenance analysis and recommendations."]:
+        if failure_history != "nan":
+            return f" Past Failure detected: {component} has failed {failure_history} times in the last {uptime_hours} hours."
+        elif spikes > 10:
+            return f"Potential failure: {component} has {spikes} temperature spikes in the last {uptime_hours} hours."
+        elif uptime_hours > 1000 and last_maintenance > 30:
+            return f"Scheduled maintenance: {component} has been in operation for {uptime_hours} hours without maintenance."
+        return f"No action needed: {component} is operating normally."
+        
+async def monitor_maintenance():
+    # Initialize the environment and client
+    load_dotenv()
+    client = AsyncOpenAI(
+        api_key="", #Use your own API key
+        base_url="https://models.inference.ai.azure.com/",
+    )
+
+    # Create the chat completion service
+    chat_completion_service = OpenAIChatCompletion(
+        ai_model_id="gpt-4o-mini",
+        async_client=client,
+    )
+
+    # Create plugin instance
+    maintenance_plugin = PredictiveMaintainerPlugin()
+
+    # Create the predictive maintainer agent
+    maintainer_agent = ChatCompletionAgent(
+        service=chat_completion_service,
+        plugins=[maintenance_plugin],
+        name="PredictiveMaintainer",
+        instructions="""You are an AI agent specialized in predictive maintenance.
+        Your role is to analyze maintenance data and provide intelligent recommendations for proactive maintenance.
+        Use the available plugins to analyze maintenance data and provide actionable insights.
+        Based on inputs and plugins,recommend 'No Action', 'Schedule Maintenance', or 'Urgent Inspection'.""",
+    )
+
+    thread = None
+    try:
+        while True:
+            # Get the next reading from mock data
+            reading = maintenance_plugin.get_next_reading()
+
+            # Format the input for the agent
+            user_input = (
+                f"Component: {reading['component']}\n"
+                f"Uptime (hours): {reading['uptime_hours']}\n"
+                f"Temperature Spike Count: {reading['spikes']}\n"
+                f"Last Maintenance (days ago): {reading['last_maintenance']}\n"
+                f"Failure History: {reading['failure_history']}\n"
+                "Based on this, what is the maintenance recommendation?"
             )
-        super().__init__(name=name, system_message=system_message)
 
-    def act(self, data_row):
-        prompt = (
-            f"Component: {data_row['component']}\n"
-            f"Uptime (hours): {data_row['uptime_hours']}\n"
-            f"Temperature Spike Count: {data_row['spikes']}\n"
-            f"Last Maintenance (days ago): {data_row['last_maintenance']}\n"
-            f"Failure History: {data_row['failure_history']}\n"
-            "Based on this, what is the maintenance recommendation?"
-        )
-        decision = get_llm_response(prompt)
-        return decision
+            print(f"\n[Predictive Maintainer] Processing: {user_input}")
+
+            # Get agent's analysis
+            async for response in maintainer_agent.invoke_stream(
+                message=user_input,
+                thread=thread
+            ):
+                if thread is None:
+                    thread = response.thread
+                print(f"{response}", end="", flush=True)
+            
+            # Simulate real-time delay
+            await asyncio.sleep(2)
+    
+    except KeyboardInterrupt:
+        print("\n[Predictive Maintainer] Shutting down...")
+    finally:
+        if thread:
+            await thread.delete()   
+
+if __name__ == "__main__":
+    asyncio.run(monitor_maintenance())
