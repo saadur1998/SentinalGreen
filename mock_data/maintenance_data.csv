@@ -1,6 +1,6 @@
-"component,uptime_hours,spikes,last_maintenance,failure_history"
-"CPU Rack 12,8760,3,90,Yes"
-"HVAC Zone B,4500,0,30,No"
-"Power Unit 7,16000,5,180,Yes"
-"Cooling Pump A,3000,1,15,No"
-"Network Switch X,12000,0,60,No"
+component,uptime_hours,spikes,last_maintenance,failure_history
+CPU Rack 12,8760,3,90,Yes
+HVAC Zone B,4500,0,30,No
+Power Unit 7,16000,5,180,Yes
+Cooling Pump A,3000,1,15,No
+Network Switch X,12000,0,60,No
