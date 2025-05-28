@@ -1,50 +1,80 @@
 # dashboard/chainlit_app.py
 
 import chainlit as cl
-from utils.llm_client import get_llm_response
+import asyncio
+import sys
+import os
+# Add the project root to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-AGENT_SYSTEM_MESSAGES = {
-    "Energy Optimizer": "You are a data center Energy Optimizer AI. Analyze energy usage and recommend energy-saving decisions.",
-    "Cooling Manager": "You are a Cooling Manager AI. Adjust cooling based on temperature, humidity, and load.",
-    "Security Sentinel": "You are a Security Sentinel AI. Review access logs and alert about unauthorized activity.",
-    "Predictive Maintainer": "You are a Predictive Maintainer AI. Predict potential hardware failures and recommend maintenance.",
-    "Compliance Auditor": "You are a Compliance & Green Auditor. Check environmental compliance and carbon targets.",
-    "Resource Allocator": "You are a Resource Allocator AI. Optimize compute, storage, and bandwidth use."
-}
+from orchestrator_agent import OrchestratorPlugin, run_orchestrator
 
 @cl.on_chat_start
 async def on_chat_start():
-    await cl.Message(content="?? Welcome to **SentinelGreen** � AI Agents for Secure & Sustainable Data Centers").send()
-
-    # Sidebar dropdown
-    await cl.ChatSettings(
-        [
-            cl.Dropdown(
-                id="agent_selector",
-                label="Select Agent",
-                values=list(AGENT_SYSTEM_MESSAGES.keys()),
-                initial_value="Energy Optimizer"
-            )
-        ]
+    await cl.Message(
+        content="?? Welcome to **SentinelGreen** 🏭 AI Orchestrator for Secure & Sustainable Data Centers\n\n"
+                "I can help you with:\n"
+                "• Energy optimization and power management\n"
+                "• Cooling system monitoring and control\n"
+                "• Security monitoring and threat detection\n"
+                "• Predictive maintenance and equipment health\n"
+                "• Compliance and regulatory requirements\n"
+                "• Resource allocation and optimization\n\n"
+                "Just describe your issue or concern, and I'll route it to the appropriate specialist agent."
     ).send()
+
+    # Initialize the orchestrator
+    cl.user_session.set("orchestrator", OrchestratorPlugin())
 
 @cl.on_message
 async def on_message(msg: cl.Message):
-    agent_choice = cl.user_session.get("agent_selector", "Energy Optimizer")
-    system_msg = AGENT_SYSTEM_MESSAGES.get(agent_choice, "You are a helpful AI agent.")
+    # Get the orchestrator instance
+    orchestrator = cl.user_session.get("orchestrator")
+    
+    # Show thinking message
+    thinking_msg = await cl.Message(content="?? Analyzing your request...").send()
+    
+    try:
+        # Route the issue to the appropriate agent
+        agent_name = orchestrator.route_issue(msg.content)
+        
+        if agent_name != "unknown":
+            # Update thinking message
+            thinking_msg.content = f"?? Routing to {agent_name} specialist..."
+            await thinking_msg.update()
+            
+            # Execute the appropriate agent
+            result = await orchestrator.execute_agent(agent_name, msg.content)
+            
+            # Send the response
+            await cl.Message(
+                content=f"?? **{agent_name.title()} Specialist Response:**\n{result}"
+            ).send()
+            
+            # Add a separator for clarity
+            await cl.Message(content="---").send()
+        else:
+            # If no specific agent is identified, use the orchestrator's analysis
+            thinking_msg.content = "?? Analyzing with orchestrator..."
+            await thinking_msg.update()
+            
+            # Get orchestrator's analysis
+            async for response in orchestrator.orchestrator_agent.invoke_stream(
+                message=msg.content,
+                thread=orchestrator.thread
+            ):
+                if orchestrator.thread is None:
+                    orchestrator.thread = response.thread
+                await cl.Message(content=str(response)).send()
+    
+    except Exception as e:
+        await cl.Message(
+            content=f"?? Error: {str(e)}\nPlease try again or rephrase your request."
+        ).send()
 
-    full_prompt = f"{system_msg}\n\nUser Input:\n{msg.content}"
-
-    cl.user_session.set("last_prompt", full_prompt)
-
-    await cl.Message(content="?? Thinking...").send()
-
-    # LLM Response
-    reply = get_llm_response(full_prompt)
-
-    await cl.Message(content=f"?? **{agent_choice} Response:**\n{reply}").send()
-
-@cl.on_settings_update
-async def on_settings_update(settings):
-    if "agent_selector" in settings:
-        cl.user_session.set("agent_selector", settings["agent_selector"])
+@cl.on_stop
+async def on_stop():
+    # Clean up any resources
+    orchestrator = cl.user_session.get("orchestrator")
+    if orchestrator and orchestrator.thread:
+        await orchestrator.thread.delete()
