@@ -42,7 +42,7 @@ async def allocate_resources():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", #Use your own API key
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -68,7 +68,7 @@ async def allocate_resources():
 
     thread = None
     try:
-        while True:
+        #while True:
             # Get the next reading from mock data
             reading = resource_plugin.get_next_reading()
             
@@ -85,16 +85,23 @@ async def allocate_resources():
             print(f"\n[Resource Allocator] Processing: {user_input}")
             
             # Get agent's analysis
+            response_text = ""
             async for response in allocator_agent.invoke_stream(
                 message=user_input,
                 thread=thread
             ):
                 if thread is None:
                     thread = response.thread
+                response_text += str(response)
                 print(f"{response}", end="", flush=True)
             
             # Simulate real-time delay
-            await asyncio.sleep(2)
+            #await asyncio.sleep(0.5)
+
+            if not response_text:
+                response_text = "No response generated from resource allocation analysis."
+
+            return response_text
     
     except KeyboardInterrupt:
         print("\n[Resource Allocator] Shutting down...")
