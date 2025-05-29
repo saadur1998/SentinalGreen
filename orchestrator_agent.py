@@ -73,22 +73,22 @@ class OrchestratorPlugin:
                 # Execute the appropriate monitoring function based on agent name
                 if agent_name == "energy":
                     result = await monitor_energy()
-                    return f"Energy Analysis: {result}"
+                    return result
                 elif agent_name == "cooling":
                     result = await monitor_cooling()
-                    return f"Cooling Analysis: {result}"
+                    return result
                 elif agent_name == "security":
                     result = await monitor_security()
-                    return f"Security Analysis: {result}"
+                    return result
                 elif agent_name == "maintenance":
                     result = await monitor_maintenance()
-                    return f"Maintenance Analysis: {result}"
+                    return result
                 elif agent_name == "compliance":
                     result = await monitor_compliance()
-                    return f"Compliance Analysis: {result}"
+                    return result
                 elif agent_name == "resource":
                     result = await allocate_resources()
-                    return f"Resource Analysis: {result}"
+                    return result
             except Exception as e:
                 return f"Error executing {agent_name} agent: {str(e)}"
         return "No appropriate agent found for this issue."
@@ -97,7 +97,7 @@ async def run_orchestrator():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", #Use your own API key
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -170,9 +170,6 @@ async def run_orchestrator():
                 print(f"\n[Orchestrator] Agent response: {result}")
             else:
                 print("\n[Orchestrator] Could not determine appropriate agent for this issue.")
-            
-            # Simulate real-time delay
-            await asyncio.sleep(1)
     
     except KeyboardInterrupt:
         print("\n[Orchestrator] Shutting down...")
