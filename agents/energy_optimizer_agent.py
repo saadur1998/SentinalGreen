@@ -36,7 +36,7 @@ async def monitor_energy():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", # Will use environment variable, this is just a placeholder
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -60,7 +60,7 @@ async def monitor_energy():
 
     thread = None
     try:
-        while True:
+       # while True:
             # Get the next reading from mock data
             reading = energy_plugin.get_next_reading()
             
@@ -70,16 +70,23 @@ async def monitor_energy():
             print(f"\n[Energy Monitor] Processing: {user_input}")
             
             # Get agent's analysis
+            response_text = ""
             async for response in energy_agent.invoke_stream(
                 messages=user_input,
                 thread=thread
             ):
                 if thread is None:
                     thread = response.thread
+                response_text += str(response)
                 print(f"{response}", end="", flush=True)
             
+            if not response_text:
+                response_text = "No response generated from energy analysis."
+
             # Simulate real-time delay
-            await asyncio.sleep(2)
+            #await asyncio.sleep(1)
+            
+            return response_text
         
     except KeyboardInterrupt:
         print("\n[Energy Monitor] Shutting down...")
