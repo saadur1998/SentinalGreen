@@ -24,7 +24,7 @@ class PredictiveMaintainerPlugin:
     @kernel_function(description="Analyzes maintenance data and provides recommendations.")
     def analyze_maintenance(self,
                             component: str,
-                            uptime_hours: float,
+                            uptime_hours: int,
                             spikes: int,
                             last_maintenance: int,
                             failure_history: str) -> Annotated[str, "Returns maintenance analysis and recommendations."]:
@@ -40,7 +40,7 @@ async def monitor_maintenance():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", #Use your own API key
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -58,41 +58,62 @@ async def monitor_maintenance():
         service=chat_completion_service,
         plugins=[maintenance_plugin],
         name="PredictiveMaintainer",
-        instructions="""You are an AI agent specialized in predictive maintenance.
+         instructions="""You are an AI agent specialized in predictive maintenance.
         Your role is to analyze maintenance data and provide intelligent recommendations for proactive maintenance.
-        Use the available plugins to analyze maintenance data and provide actionable insights.
-        Based on inputs and plugins,recommend 'No Action', 'Schedule Maintenance', or 'Urgent Inspection'.""",
+        
+        IMPORTANT: You must ONLY analyze the data provided in the input. DO NOT make up or assume any data.
+        The input will contain specific information about a single component including:
+        - Component name
+        - Uptime hours
+        - Temperature spike count
+        - Days since last maintenance
+        - Failure history
+        
+        Based on ONLY these provided metrics, recommend one of:
+        - 'No Action' if the component is operating normally
+        - 'Schedule Maintenance' if maintenance is needed soon
+        - 'Urgent Inspection' if immediate attention is required
+        
+        DO NOT analyze or mention any components that are not in the provided data.""",
     )
 
     thread = None
     try:
-        while True:
+        #while True:
             # Get the next reading from mock data
             reading = maintenance_plugin.get_next_reading()
 
             # Format the input for the agent
             user_input = (
+                "Analyze the following data and provide a maintenance recommendation:\n"
+                "Use the data provided in the input to make a recommendation.\n"
                 f"Component: {reading['component']}\n"
                 f"Uptime (hours): {reading['uptime_hours']}\n"
                 f"Temperature Spike Count: {reading['spikes']}\n"
                 f"Last Maintenance (days ago): {reading['last_maintenance']}\n"
-                f"Failure History: {reading['failure_history']}\n"
-                "Based on this, what is the maintenance recommendation?"
+                f"Failure History: {reading['failure_history']}"
             )
 
             print(f"\n[Predictive Maintainer] Processing: {user_input}")
 
             # Get agent's analysis
+            response_text = ""
             async for response in maintainer_agent.invoke_stream(
                 message=user_input,
                 thread=thread
             ):
                 if thread is None:
                     thread = response.thread
+                response_text += str(response)
                 print(f"{response}", end="", flush=True)
             
             # Simulate real-time delay
-            await asyncio.sleep(2)
+            #await asyncio.sleep(0.5)
+
+            if not response_text:
+                response_text = "No response generated from predictive maintenance analysis."
+
+            return response_text
     
     except KeyboardInterrupt:
         print("\n[Predictive Maintainer] Shutting down...")
