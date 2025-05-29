@@ -11,7 +11,6 @@ from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.functions import kernel_function
 
-
 class CoolingMonitorPlugin:
     """Plugin for cooling monitoring and management."""
 
@@ -39,7 +38,7 @@ async def monitor_cooling():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", # Will use environment variable, this is just a placeholder
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -65,7 +64,7 @@ async def monitor_cooling():
 
     thread = None
     try:
-        while True:
+        #while True:
             # Get the next reading from mock data
             reading = cooling_plugin.get_next_reading()
 
@@ -81,16 +80,24 @@ async def monitor_cooling():
             print(f"\n[Cooling Manager] Processing: {user_input}")
 
             # Get agent's analysis
+            response_text = ""
             async for response in cooling_agent.invoke_stream(
                 message = user_input,
                 thread=thread
             ):
                 if thread is None:
                     thread = response.thread
+                response_text += str(response)
                 print(f"{response}", end="", flush=True)
             
             # Simulate real-time delay
-            await asyncio.sleep(2)
+            #await asyncio.sleep(0.5)
+
+            if not response_text:
+                response_text = "No response generated from cooling analysis."
+
+            return response_text
+    
     except KeyboardInterrupt:
         print("\n[Cooling Manager] Shutting down...")
     finally:
