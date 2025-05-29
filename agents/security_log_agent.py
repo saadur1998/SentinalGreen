@@ -39,7 +39,7 @@ async def monitor_security():
     # Initialize the environment and client
     load_dotenv()
     client = AsyncOpenAI(
-        api_key="", #Use your own API key
+        api_key="", #Use your own token or api key
         base_url="https://models.inference.ai.azure.com/",
     )
 
@@ -65,7 +65,7 @@ async def monitor_security():
 
     thread = None
     try:
-        while True:
+        #while True:
             # Get the next reading from mock data
             reading = security_plugin.get_next_reading()
             # Format the input for the agent
@@ -82,16 +82,23 @@ async def monitor_security():
             print(f"\n[Security Sentinel] Processing: {user_input}")
 
             # Get agent's analysis
+            response_text = ""
             async for response in sentinel_agent.invoke_stream(
                 message=user_input,
                 thread=thread
             ):
                 if thread is None:
                     thread = response.thread
+                response_text += str(response)
                 print(f"{response}", end="", flush=True)
             
             # Simulate real-time delay
-            await asyncio.sleep(2)
+            #await asyncio.sleep(0.5)
+
+            if not response_text:
+                response_text = "No response generated from security analysis."
+
+            return response_text
     
     except KeyboardInterrupt:
         print("\n[Security Sentinel] Shutting down...")
